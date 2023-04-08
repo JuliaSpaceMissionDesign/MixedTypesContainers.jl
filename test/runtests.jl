@@ -1,6 +1,6 @@
 using Containers
 using Test
 
-@testset "Containers.jl" verbose=true begin
+@testset "Containers.jl" verbose = true begin
     include("parse.jl")
 end

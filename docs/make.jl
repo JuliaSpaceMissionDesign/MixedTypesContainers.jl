@@ -15,7 +15,5 @@ makedocs(;
         canonical="https://astronaut-tools.gitlab.io/julia/core/Containers",
         assets=String[],
     ),
-    pages=[
-        "Home" => "index.md",
-    ],
+    pages=["Home" => "index.md"],
 )
