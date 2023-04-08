@@ -18,7 +18,6 @@ before_script:
       julia --project=@. -e '
         using Pkg
         Pkg.add("Coverage")
-        Pkg.Registry.add(Pkg.RegistrySpec(url="git@gitlab.com:testingcis/TestRegister.git"))
         Pkg.build()
         Pkg.test(coverage = true)'
 
@@ -39,13 +38,6 @@ before_script:
 # -------------------------
 # Perform all the tests
 
-"UnitTests:v1.7":
-  stage: test
-  image: julia:1.7
-  extends:
-    - .unittests
-    - .coverage
-
 "UnitTests:v1.8":
   stage: test
   image: julia:1.8
@@ -59,7 +51,7 @@ before_script:
 # Build the documentation for the package
 
 "Documentation":
-  image: julia:1.7
+  image: julia:1.8
   stage: build
 
   artifacts:
