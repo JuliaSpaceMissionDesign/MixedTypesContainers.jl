@@ -32,9 +32,41 @@ are available:
 
 - `"field-1" → T1`: field defined as type `T1` with name `field-1`;
 - `"field-1" → T2(1.0)`: field defined as type `T2` with name `field-2`;
-- `T1(1.0)`: unnamed filed with type `T1`
-- `T2`: unnamed filed with type `T2`
+- `T1(1.0)`: unnamed filed with type `T1`;
+- `T2`: unnamed filed with type `T2`;
 
 As can be noticed, you can use a type-only definition of the field or a type constructor.
 In the latter case, there is the possibility to create an empty constructor for the new
 container, where all the fields initialization is handled by the container constructor itself.
+
+## Advanced use
+
+### Container parameters
+
+#### TODO: write docs
+
+```julia
+@container "ContainerName" init=true begin
+    "field-1" → T1,
+    "field-2" → T2(1.0),
+    T1(1.0),
+    T2
+end
+```
+
+### Recursive containers definition
+
+#### TODO: write docs
+
+```julia
+@container "ContainerName" init=true begin
+    "field-1" → T1,
+    "field-2" → T2(1.0),
+    T1(1.0),
+    T2
+    @container "SubContainerName" begin
+        "field-1" → T2(1.0),
+        T1(2.0)
+    end
+end
+```
