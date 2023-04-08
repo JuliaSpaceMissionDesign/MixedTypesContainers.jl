@@ -1,6 +1,6 @@
 using Containers
 using Test
 
-@testset "Containers.jl" begin
-    # Write your tests here.
+@testset "Containers.jl" verbose=true begin
+    include("parse.jl")
 end

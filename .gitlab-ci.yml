@@ -1,6 +1,6 @@
 stages:
-  - build 
   - test
+  - build
   - deploy
 
 before_script:
@@ -14,14 +14,14 @@ before_script:
 
 .unittests:
   script:
-    - | 
+    - |
       julia --project=@. -e '
         using Pkg
         Pkg.add("Coverage")
         Pkg.Registry.add(Pkg.RegistrySpec(url="git@gitlab.com:testingcis/TestRegister.git"))
-        Pkg.build() 
+        Pkg.build()
         Pkg.test(coverage = true)'
-        
+
 .coverage:
   coverage: /Test coverage (\d+\.\d+%)/
   after_script:
@@ -37,7 +37,7 @@ before_script:
 # -------------------------
 # Tests
 # -------------------------
-# Perform all the tests 
+# Perform all the tests
 
 "UnitTests:v1.7":
   stage: test
@@ -60,22 +60,22 @@ before_script:
 
 "Documentation":
   image: julia:1.7
-  stage: build   
-  
+  stage: build
+
   artifacts:
-    paths: 
+    paths:
       - documentation
     expire_in: 1 h
 
   script:
-    # Install Documenter 
-    # Other dependecies may be already installed in a project 
+    # Install Documenter
+    # Other dependecies may be already installed in a project
     # within the 'docs/' folder
     - julia --project=docs/ -e 'using Pkg; Pkg.add("Documenter");'
     # Install the current package as 'dev'
     - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
     # Build the documentation
-    - julia --project=docs/ docs/make.jl 
+    - julia --project=docs/ docs/make.jl
 
     - mkdir -p documentation
     - mv docs/build/* documentation/
@@ -87,8 +87,8 @@ before_script:
 # Deploy the documentation
 pages:
   stage: deploy
-  
-  dependencies: 
+
+  dependencies:
     - Documentation
 
   script:
@@ -100,8 +100,5 @@ pages:
       - public
 
   only:
-    - master 
+    - master
     - tags
-
-
-
