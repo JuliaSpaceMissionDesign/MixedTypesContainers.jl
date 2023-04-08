@@ -1,6 +1,10 @@
 export @container
 
-# Create the new container structure
+"""
+    defcontainer(exprargs)
+
+Create a new `ContainerDef`.
+"""
 function defcontainer(exprargs)
     cdef = ContainerDef(exprargs[1])
 
@@ -18,7 +22,7 @@ end
 """
     @container
 
-A macro to create a new container
+Create a new container.
 """
 macro container(expr...)
     # preprocess expression
