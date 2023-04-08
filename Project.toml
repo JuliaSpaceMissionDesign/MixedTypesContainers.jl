@@ -1,7 +1,10 @@
 name = "Containers"
 uuid = "510bf1af-7f68-43f5-b874-865a7db840ed"
 authors = ["Andrea Pasquale <andrea.pasquale@polimi.it> and contributors"]
-version = "0.1.0"
+version = "0.2.0"
+
+[deps]
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
 
 [compat]
 julia = "1"
