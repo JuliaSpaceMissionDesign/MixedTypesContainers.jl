@@ -3,7 +3,7 @@
 # Fields
 
 @testset "_parse_field!" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
 
     Containers._parse_field!(cdef, Expr(:call, :A, 1))
     @test :A in cdef.ftypes
@@ -25,14 +25,14 @@
     @test :C in cdef.ftypes
     @test isempty(cdef.finsta)
 
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
     cdef.par.init = true
     @test_throws Exception Containers._parse_field!(cdef, Expr(:call, :(→), "name", :A))
 
 end
 
 @testset "parse_container_fields__macrocall" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
     Containers.parse_container_fields!(cdef, nothing, Val(:macrocall))
 
     @test isempty(cdef.fnames)
@@ -41,7 +41,7 @@ end
 end
 
 @testset "parse_container_fields__call" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
 
     Containers.parse_container_fields!(cdef, [:A], Val(:call))
     @test :A in cdef.ftypes
@@ -56,7 +56,7 @@ end
 end
 
 @testset "parse_container_fields__tuple" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
 
     Containers.parse_container_fields!(cdef,
         (:A, :(B(1)), :("testa" → A), :("testb" → B(2))), Val(:tuple))
@@ -74,7 +74,7 @@ end
 # Args
 
 @testset "parse_container_args!__basecase" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
     Containers.parse_container_args!(cdef, missing, missing)
 
     @test isempty(cdef.fnames)
@@ -83,7 +83,7 @@ end
 end
 
 @testset "parse_container_args!__block" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
     cdef.par.init = true
     toparse = Base.remove_linenums!(quote
         "testa" → A(2)
@@ -102,7 +102,7 @@ end
 # Parameters
 
 @testset "parse_container_parameters!" begin
-    cdef = Containers.ContainerDef("Test")
+    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
 
     # basecase
     Containers.parse_container_parameters!(cdef, missing, missing)
@@ -111,7 +111,7 @@ end
     @test isempty(cdef.ftypes)
     @test isempty(cdef.finsta)
     @test cdef.par.init == false
-    @test cdef.par.parenttype == Containers.AbstractContainer
+    @test cdef.par.parenttype == :AbstractContainer
 
     # set parameter
     Containers.parse_container_parameters!(cdef, Expr(:(=), :init, true))
