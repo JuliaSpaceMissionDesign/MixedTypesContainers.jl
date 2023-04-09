@@ -1,7 +1,11 @@
+export AbstractContainer
+
 abstract type AbstractContainer end
 
+abstract type AbstractContainerParameters end
+
 """
-    ContainerParameters
+    DefaultContainerParameters <: AbstractContainerParameters
 
 A collection of Containers allowed parameters with their default values.
 
@@ -9,9 +13,9 @@ A collection of Containers allowed parameters with their default values.
 - `init::Bool` -- Initialize the container. Default to `false`.
 - `parenttype::DataType` -- Type of the container parent. Default to `AbstractContainer`.
 """
-@with_kw mutable struct ContainerParameters
+@with_kw mutable struct DefaultContainerParameters <: AbstractContainerParameters
     init::Bool = false
-    parenttype::DataType = AbstractContainer
+    parenttype::Symbol = :AbstractContainer
 end
 
 """
@@ -21,7 +25,7 @@ A type to handle the required parameters to create a new container.
 
 ### Fields
 - `name::Symbol` -- Name of the container
-- `par::ContainerParameters` -- Containter options
+- `par::AbstractContainerParameters` -- Containter options
 
 - `fnames::Vector{String}` -- Name of the container fields
 - `ftypes::Vector{Symbol}` -- Types of the container fields
@@ -31,9 +35,9 @@ A type to handle the required parameters to create a new container.
 ### Constructor
 - `ContainerDef(name::String)` -- default constructor by name
 """
-struct ContainerDef
+struct ContainerDef{T<:AbstractContainerParameters}
     name::Symbol
-    par::ContainerParameters
+    par::T
 
     # typedef parameters
     fnames::Vector{String}
@@ -41,15 +45,42 @@ struct ContainerDef
     finsta::Vector{Expr}
     fnum::Array{Int,0}
 
-    function ContainerDef(name::String)
+    function ContainerDef{T}(name::String) where {T <: AbstractContainerParameters}
         num = Array{Int,0}(undef)
         num[] = 0
-        return new(Symbol(name), ContainerParameters(), [], [], [], num)
+        return new(Symbol(name), T(), [], [], [], num)
     end
 end
 
-function Base.show(io::IO, cdef::ContainerDef)
-    println(io, "ContainerDef(")
+"""
+    getfields(cdef::ContainerDef)
+
+Get container fields names.
+"""
+function getfields(cdef::ContainerDef)
+    return ntuple(i -> Symbol(cdef.fnames[i]), cdef.fnum[])
+end
+
+"""
+    gettypes(cdef::ContainerDef)
+
+Get container fields types.
+"""
+function gettypes(cdef::ContainerDef)
+    return ntuple(i -> cdef.ftypes[i], cdef.fnum[])
+end
+
+"""
+    getinstances(cdef::ContainerDef)
+
+Get container fields instance definitions.
+"""
+function getinstances(cdef::ContainerDef)
+    return ntuple(i -> cdef.finsta[i], cdef.fnum[])
+end
+
+function Base.show(io::IO, cdef::ContainerDef{T}) where {T <: AbstractContainerParameters}
+    println(io, "ContainerDef{$T}(")
     println(io, " name = $(cdef.name)")
     println(io, " par = $(cdef.par)")
     println(io, " fnum = $(cdef.fnum[])")

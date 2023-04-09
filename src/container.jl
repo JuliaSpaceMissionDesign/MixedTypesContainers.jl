@@ -1,12 +1,12 @@
 export @container
 
 """
-    defcontainer(exprargs)
+    define_container(exprargs)
 
-Create a new `ContainerDef`.
+Create a new `ContainerDef` with the container definitions.
 """
-function defcontainer(exprargs)
-    cdef = ContainerDef(exprargs[1])
+function define_container(exprargs; T::DataType = DefaultContainerParameters)
+    cdef = ContainerDef{T}(exprargs[1])
 
     # parameters
     for arg in exprargs[2:(end - 1)]
@@ -20,39 +20,64 @@ function defcontainer(exprargs)
 end
 
 """
+    define_container(cdef)
+
+Create a new container and the associated methods.
+"""
+function create_container(cdef)
+    name = cdef.name
+
+    fields = getfields(cdef)
+    types = gettypes(cdef)
+
+    if length(unique(types)) == 1
+        nfields = length(fields)
+        nttype = :(NTuple{$nfields, $(types[1])})
+    else
+        nttype = :(Tuple{$(types...)})
+    end
+
+    return quote
+        # ---
+        # Type definition
+        struct $name <: $(cdef.par.parenttype)
+            data::NamedTuple{$fields, $nttype}
+        end
+
+        # ---
+        # Constructors
+        $name(data::$nttype) = $name(NamedTuple{$fields}(data))
+        $name(data::AbstractVector) = $name(tuple(data...))
+
+        # ---
+        # Julia API
+        Base.getindex(c::$name, elements...) = Base.getindex(c.data, elements...)
+        function Base.show(io::IO, c::$name)
+            println(io, "$($name)(items=$(length(c.data)))")
+            return nothing
+        end
+    end
+
+end
+
+"""
     @container
 
 Create a new container.
 """
-macro container(expr...)
-    # preprocess expression
-    exprargs = Base.remove_linenums!.(expr)
+macro container(exprargs...)
+    # preprocess expression to remove line numbers
+    exprargs = Base.remove_linenums!.(exprargs)
 
-    # define the container
-    cdef = defcontainer(exprargs)
+    # define the container fields
+    cdef = define_container(exprargs)
 
-    tname = cdef.name
+    # create the container str and methods
+    cstr = create_container(cdef)
 
     return esc(
         quote
-            # ---
-            # Type definition
-            struct $tname <: $(cdef.par.parenttype)
-                data::NamedTuple{$(cdef.fnames),$(cdef.ftypes)}
-            end
-
-            # ---
-            # Constructors
-            $tname(data::Tuple) = $tname(NamedTuple{$(cdef.fnames)}(data))
-            $tname(data::AbstractVector) = $tname(tuple(data...))
-
-            # ---
-            # Julia API
-            Base.getindex(c::$tname, elements...) = Base.getindex(c.data, elements...)
-            function Base.show(io::IO, c::$tname)
-                println(io, "$($(tname))(items=$(length(c.data)))")
-                return nothing
-            end
-        end,
+            $(cstr)
+        end
     )
 end
