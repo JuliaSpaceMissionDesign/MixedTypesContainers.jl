@@ -43,6 +43,10 @@ function _parse_field!(cdef, f)
                 throw(error("Cannot initialize container defined on types only!"))
             push!(cdef.ftypes, arg[3])
 
+        elseif arg[3] == :macrocall
+            # TODO: implement recursive call
+            argsexp = macroexpand(@__MODULE__, args[3])
+
         else
             # "name" → T(args..)
             push!(cdef.ftypes, arg[3].args[1])
@@ -61,7 +65,7 @@ function _parse_field!(cdef, f)
 end
 
 function parse_container_fields!(cdef, fargs, ::Val{:macrocall})
-    # TODO: implement the recursive field parse
+    # TODO: implement macro call within the container def
     return nothing
 end
 

@@ -63,8 +63,8 @@ end
     "field-1" → T1,
     "field-2" → T2(1.0),
     T1(1.0),
-    T2
-    @container "SubContainerName" begin
+    T2,
+    "subcontainer" → @container "SubContainerName" begin
         "field-1" → T2(1.0),
         T1(2.0)
     end
