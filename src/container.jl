@@ -59,7 +59,15 @@ function create_container(cdef)
     end
 end
 
-function create_cinstance(cdef)
+"""
+    create_empty_constructor(cdef)
+
+Create a new container empty constructor.
+This can be created only if `init` parameter is set to `true`, otherwise
+nothing is returned. The empty constructor, if available, is capable to 
+initialize all the fields within the container.
+"""
+function create_empty_constructor(cdef)
     instances = getinstances(cdef)
     instance = :(tuple($(instances...)))
     if length(instances) == cdef.fnum[]
@@ -90,7 +98,7 @@ macro container(exprargs...)
 
     # create the container str and methods
     cstr = create_container(cdef)
-    cins = create_cinstance(cdef)
+    cins = create_empty_constructor(cdef)
 
     return esc(
         quote
