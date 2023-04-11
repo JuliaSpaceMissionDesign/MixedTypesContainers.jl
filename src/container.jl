@@ -59,6 +59,23 @@ function create_container(cdef)
     end
 end
 
+function create_cinstance(cdef)
+    instances = getinstances(cdef)
+    instance = :(tuple($(instances...)))
+    if length(instances) == cdef.fnum[]
+        # Create a default empty constructor
+        name = cdef.name
+        return quote
+            function $name()
+                return $name($instance)
+            end
+            $name()
+        end
+    else
+        return :(nothing)
+    end
+end
+
 """
     @container
 
@@ -73,10 +90,12 @@ macro container(exprargs...)
 
     # create the container str and methods
     cstr = create_container(cdef)
+    cins = create_cinstance(cdef)
 
     return esc(
         quote
-            $(cstr)
-        end,
+            $cstr
+            $cins
+        end
     )
 end
