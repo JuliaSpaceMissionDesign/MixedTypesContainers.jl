@@ -46,15 +46,29 @@ and shall be correspond to a field of a `AbstractContainerParameters` subtype. T
 subtype is `DefaultContainerParameters` which contains the following parameters and default values:
 
 - `init::Bool` -- create an empty constructor that initialize the container and its fields. Default is `false`.
-- `parenttype::Symbol` -- parent (abstract) type for the container. Default is `:AbstractContainer`.
-
-Here is an example of _container parameters_ use:
 
 ```julia
-@container "ContainerName" init=true begin
-    "field-1" → T1,
+c = @container "ContainerName" init=true begin
+    "field-1" → T1(1.0),
     "field-2" → T2(1.0),
     T1(1.0),
-    T2
+    T2(2.0)
+end
+```
+
+In case the `init` parameter is used, the `@container` macro returns an initialized container. As in the 
+example above, it can be stored in a variable already by assignment.
+
+- `parenttype::Symbol` -- parent (abstract) type for the container. Default is `:AbstractContainer`.
+
+```julia
+@container "ContainerName" parenttype = :JustAnotherParent begin
+    "f1" → T1
+end
+
+# This corresponds to:
+
+struct ContainerName <: JustAnotherParent
+    data::NamedTuple{(:f1, ), Tuple{T1}}
 end
 ```
