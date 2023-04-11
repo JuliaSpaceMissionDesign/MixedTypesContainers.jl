@@ -28,7 +28,6 @@
     cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
     cdef.par.init = true
     @test_throws Exception Containers._parse_field!(cdef, Expr(:call, :(→), "name", :A))
-
 end
 
 @testset "parse_container_fields__macrocall" begin
@@ -58,8 +57,9 @@ end
 @testset "parse_container_fields__tuple" begin
     cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
 
-    Containers.parse_container_fields!(cdef,
-        (:A, :(B(1)), :("testa" → A), :("testb" → B(2))), Val(:tuple))
+    Containers.parse_container_fields!(
+        cdef, (:A, :(B(1)), :("testa" → A), :("testb" → B(2))), Val(:tuple)
+    )
     @test :A in cdef.ftypes
     @test "fld1" in cdef.fnames
     @test :B in cdef.ftypes
@@ -67,7 +67,6 @@ end
     @test "testa" in cdef.fnames
     @test "testb" in cdef.fnames
     @test cdef.fnum[] == 4
-
 end
 
 # ---
@@ -85,17 +84,18 @@ end
 @testset "parse_container_args!__block" begin
     cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
     cdef.par.init = true
-    toparse = Base.remove_linenums!(quote
-        "testa" → A(2)
-        B(3)
-    end)
+    toparse = Base.remove_linenums!(
+        quote
+            "testa" → A(2)
+            B(3)
+        end,
+    )
     Containers.parse_container_args!(cdef, toparse.args, Val(:block))
     @test :A in cdef.ftypes
     @test "testa" in cdef.fnames
     @test :(A(2)) in cdef.finsta
     @test :B in cdef.ftypes
     @test "fld2" in cdef.fnames
-
 end
 
 # ---

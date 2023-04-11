@@ -5,7 +5,7 @@ export @container
 
 Create a new `ContainerDef` with the container definitions.
 """
-function define_container(exprargs; T::DataType = DefaultContainerParameters)
+function define_container(exprargs; T::DataType=DefaultContainerParameters)
     cdef = ContainerDef{T}(exprargs[1])
 
     # parameters
@@ -32,7 +32,7 @@ function create_container(cdef)
 
     if length(unique(types)) == 1
         nfields = length(fields)
-        nttype = :(NTuple{$nfields, $(types[1])})
+        nttype = :(NTuple{$nfields,$(types[1])})
     else
         nttype = :(Tuple{$(types...)})
     end
@@ -41,7 +41,7 @@ function create_container(cdef)
         # ---
         # Type definition
         struct $name <: $(cdef.par.parenttype)
-            data::NamedTuple{$fields, $nttype}
+            data::NamedTuple{$fields,$nttype}
         end
 
         # ---
@@ -57,7 +57,6 @@ function create_container(cdef)
             return nothing
         end
     end
-
 end
 
 """
@@ -78,6 +77,6 @@ macro container(exprargs...)
     return esc(
         quote
             $(cstr)
-        end
+        end,
     )
 end

@@ -14,11 +14,11 @@ makedocs(;
         prettyurls=CI,
         canonical="https://astronaut-tools.gitlab.io/julia/core/Containers",
         assets=String[],
-        ansicolor = true,
+        ansicolor=true,
     ),
     pages=[
         "Home" => "index.md"
         "Design" => "design.md"
         "API" => "api.md"
-        ],
+    ],
 )

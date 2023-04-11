@@ -45,7 +45,7 @@ struct ContainerDef{T<:AbstractContainerParameters}
     finsta::Vector{Expr}
     fnum::Array{Int,0}
 
-    function ContainerDef{T}(name::String) where {T <: AbstractContainerParameters}
+    function ContainerDef{T}(name::String) where {T<:AbstractContainerParameters}
         num = Array{Int,0}(undef)
         num[] = 0
         return new(Symbol(name), T(), [], [], [], num)
@@ -79,7 +79,7 @@ function getinstances(cdef::ContainerDef)
     return ntuple(i -> cdef.finsta[i], cdef.fnum[])
 end
 
-function Base.show(io::IO, cdef::ContainerDef{T}) where {T <: AbstractContainerParameters}
+function Base.show(io::IO, cdef::ContainerDef{T}) where {T<:AbstractContainerParameters}
     println(io, "ContainerDef{$T}(")
     println(io, " name = $(cdef.name)")
     println(io, " par = $(cdef.par)")
