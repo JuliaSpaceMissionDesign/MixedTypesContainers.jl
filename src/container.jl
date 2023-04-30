@@ -20,7 +20,7 @@ function define_container(exprargs; T::DataType=DefaultContainerParameters)
 end
 
 """
-    define_container(cdef)
+    create_container(cdef)
 
 Create a new container and the associated methods.
 """
@@ -29,8 +29,10 @@ function create_container(cdef)
 
     fields = getfields(cdef)
     types = gettypes(cdef)
+    ntyp = length(unique(types))
+    nels = length(fields)
 
-    if length(unique(types)) == 1
+    if ntyp == 1
         nfields = length(fields)
         nttype = :(NTuple{$nfields,$(types[1])})
     else
@@ -40,8 +42,9 @@ function create_container(cdef)
     return quote
         # ---
         # Type definition
-        struct $name <: $(cdef.par.parenttype)
+        struct $name{N,M} <: $(cdef.par.parenttype)
             data::NamedTuple{$fields,$nttype}
+            $name(data::NamedTuple{$fields,$nttype}) = new{$ntyp,$nels}(data)
         end
 
         # ---
@@ -104,6 +107,6 @@ macro container(exprargs...)
         quote
             $cstr
             $cins
-        end
+        end,
     )
 end

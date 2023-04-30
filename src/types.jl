@@ -1,6 +1,6 @@
 export AbstractContainer
 
-abstract type AbstractContainer end
+abstract type AbstractContainer{N} end
 
 abstract type AbstractContainerParameters end
 
@@ -15,7 +15,7 @@ A collection of Containers allowed parameters with their default values.
 """
 @with_kw mutable struct DefaultContainerParameters <: AbstractContainerParameters
     init::Bool = false
-    parenttype::Symbol = :AbstractContainer
+    parenttype::Symbol = Symbol("AbstractContainer{N}")
 end
 
 """
