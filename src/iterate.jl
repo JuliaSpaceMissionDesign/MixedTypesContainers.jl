@@ -1,3 +1,5 @@
+export @unwrap, @iterated
+
 function _replace_iter(idx::Int, forexpr::Expr, itname::Symbol)
     return MacroTools.postwalk(x -> x == :($itname) ? :($idx) : x, forexpr)
 end
@@ -70,7 +72,7 @@ end
 """
     @iterated
 
-Create an _unwrappable_ function. See [`unwrap`](@ref) for details of how `Container` loops 
+Create an _unwrappable_ function. See [`@unwrap`](@ref) for details of how `Container` loops 
 are efficiently treated.
 """
 macro iterated(f)
