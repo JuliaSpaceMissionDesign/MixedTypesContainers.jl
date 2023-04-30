@@ -6,5 +6,5 @@
 
     Containers.parse_container_fields!(cdef, [:A], Val(:call))
     @test :A in Containers.gettypes(cdef)
-    @test :fld1 in Containers.getfields(cdef)
+    @test Symbol("$(Containers.CONTAINER_DEFAULT_FNAME)1") in Containers.getfields(cdef)
 end

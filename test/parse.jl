@@ -44,14 +44,14 @@ end
 
     Containers.parse_container_fields!(cdef, [:A], Val(:call))
     @test :A in cdef.ftypes
-    @test "fld1" in cdef.fnames
+    @test "$(Containers.CONTAINER_DEFAULT_FNAME)1" in cdef.fnames
 
     Containers.parse_container_fields!(cdef, [:A, 1], Val(:call))
-    @test "fld2" in cdef.fnames
+    @test "$(Containers.CONTAINER_DEFAULT_FNAME)2" in cdef.fnames
 
     Containers.parse_container_fields!(cdef, [:B, 1, 2, 3], Val(:call))
     @test :B in cdef.ftypes
-    @test "fld3" in cdef.fnames
+    @test "$(Containers.CONTAINER_DEFAULT_FNAME)3" in cdef.fnames
 end
 
 @testset "parse_container_fields__tuple" begin
@@ -61,9 +61,9 @@ end
         cdef, (:A, :(B(1)), :("testa" → A), :("testb" → B(2))), Val(:tuple)
     )
     @test :A in cdef.ftypes
-    @test "fld1" in cdef.fnames
+    @test "$(Containers.CONTAINER_DEFAULT_FNAME)1" in cdef.fnames
     @test :B in cdef.ftypes
-    @test "fld2" in cdef.fnames
+    @test "$(Containers.CONTAINER_DEFAULT_FNAME)2" in cdef.fnames
     @test "testa" in cdef.fnames
     @test "testb" in cdef.fnames
     @test cdef.fnum[] == 4
@@ -95,7 +95,7 @@ end
     @test "testa" in cdef.fnames
     @test :(A(2)) in cdef.finsta
     @test :B in cdef.ftypes
-    @test "fld2" in cdef.fnames
+    @test "$(Containers.CONTAINER_DEFAULT_FNAME)2" in cdef.fnames
 end
 
 # ---
@@ -111,7 +111,7 @@ end
     @test isempty(cdef.ftypes)
     @test isempty(cdef.finsta)
     @test cdef.par.init == false
-    @test cdef.par.parenttype == :AbstractContainer
+    @test cdef.par.parenttype == Symbol("AbstractContainer{N}")
 
     # set parameter
     Containers.parse_container_parameters!(cdef, Expr(:(=), :init, true))
