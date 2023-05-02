@@ -1,7 +1,7 @@
 name = "Containers"
-uuid = "510bf1af-7f68-43f5-b874-865a7db840ed"
+uuid = "8f51d76f-989b-4dfb-b882-e77df0ec16dd"
 authors = ["Andrea Pasquale <andrea.pasquale@polimi.it> and contributors"]
-version = "0.2.1"
+version = "1.0.0"
 
 [deps]
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
