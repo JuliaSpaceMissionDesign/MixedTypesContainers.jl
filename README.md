@@ -2,7 +2,7 @@
 
 # Containers.jl
 
-*An efficient library for mixed-types containers.*
+*An efficient library for mixed-types containers handling and iteration.*
 
 ## Quickstart
 
