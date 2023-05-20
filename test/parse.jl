@@ -36,7 +36,7 @@ end
     isrec, recexpr, name = getrecursive(:(@container "Name"))
     @test isrec
     @test isnothing(name)
-    @test recexpr == :("Name")
+    @test recexpr == Any["Name"]
 
 end
 
