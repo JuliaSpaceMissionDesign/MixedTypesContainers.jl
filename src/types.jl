@@ -34,6 +34,11 @@ function ContainerDef(name, cpar::T) where {T<:AbstractContainerParameters}
     return ContainerDef{T}(Symbol(name), cpar, String[], Symbol[], Expr[], num, [], Bool[])
 end
 
+"""
+    haschildrens(cdef::ContainerDef)
+
+Return `true` if the container that will be defined with `cdef` has child containers.
+"""
 @inline haschildrens(cdef::ContainerDef) = length(cdef.childrens) > 0
 
 @inline function getchildcontainer(cdef::ContainerDef, i::Int) 
@@ -57,3 +62,29 @@ end
     end
 end
 
+"""
+    getfields(cdef::ContainerDef)
+
+Get container fields names.
+"""
+@inline function getfields(cdef::ContainerDef)
+    return ntuple(i -> Symbol(cdef.fnames[i]), cdef.fnum[])
+end
+
+"""
+    gettypes(cdef::ContainerDef)
+
+Get container fields types.
+"""
+@inline function gettypes(cdef::ContainerDef)
+    return ntuple(i -> cdef.ftypes[i], cdef.fnum[])
+end
+
+"""
+    getinstances(cdef::ContainerDef)
+
+Get container fields instance definitions.
+"""
+@inline function getinstances(cdef::ContainerDef)
+    return ntuple(i -> cdef.finsta[i], cdef.fnum[])
+end

@@ -1,36 +1,36 @@
 @testset "parse_container" verbose=true begin
     
     @testset "@container 'Name' (T1, T2, T3, ...)" begin
-        cdef = parse_container(:(@container "Name" (A, B, C, D)).args[3:end])
+        cdef = Containers.parse_container(:(@container "Name" (A, B, C, D)).args[3:end])
         @test cdef.fnum[] == 4
         @test cdef.fnames == ["FIELD1", "FIELD2", "FIELD3", "FIELD4"]
         @test cdef.ftypes == [:A, :B, :C, :D]
-        @test !check_field_instance(cdef)
+        @test !Containers.check_field_instance(cdef)
     end
 
     @testset "@container 'Name' (T1(..), T2(..), ...)" begin
-        cdef = parse_container(:(@container "Name" (A(1, 3), B(), C(), D(3))).args[3:end])
+        cdef = Containers.parse_container(:(@container "Name" (A(1, 3), B(), C(), D(3))).args[3:end])
         @test cdef.fnum[] == 4
         @test cdef.fnames == ["FIELD1", "FIELD2", "FIELD3", "FIELD4"]
         @test cdef.ftypes == [:A, :B, :C, :D]
         @test cdef.finsta == [:(A(1,3)), :(B()), :(C()), :(D(3))]
-        @test check_field_instance(cdef)
+        @test Containers.check_field_instance(cdef)
     end
 
     @testset "@container 'Name' ('a' → T1, 'b' → T2, ...)" begin
-        cdef = parse_container(:(@container "Name" ("a" → A, "b" → B, "c" → C)).args[3:end])
+        cdef = Containers.parse_container(:(@container "Name" ("a" → A, "b" → B, "c" → C)).args[3:end])
         @test cdef.fnum[] == 3
         @test cdef.fnames == ["a", "b", "c"]
         @test cdef.ftypes == [:A, :B, :C]
-        @test !check_field_instance(cdef)
+        @test !Containers.check_field_instance(cdef)
     end
 
     @testset "@container 'Name' ('a' → T1(..), 'b' → T2(..), ...)" begin
-        cdef = parse_container(:(@container "Name" ("a" → A(), "b" → B(1.0), "c" → C())).args[3:end])
+        cdef = Containers.parse_container(:(@container "Name" ("a" → A(), "b" → B(1.0), "c" → C())).args[3:end])
         @test cdef.fnum[] == 3
         @test cdef.fnames == ["a", "b", "c"]
         @test cdef.ftypes == [:A, :B, :C]
-        @test check_field_instance(cdef)
+        @test Containers.check_field_instance(cdef)
         @test cdef.finsta == [:(A()), :(B(1.0)), :(C())]
     end
 
@@ -41,11 +41,11 @@
                 B
             end
         )
-        cdef = parse_container(expr.args[3:end])
+        cdef = Containers.parse_container(expr.args[3:end])
         @test cdef.fnum[] == 2
         @test cdef.fnames == ["FIELD1", "FIELD2"]
         @test cdef.ftypes == [:A, :B]
-        @test !check_field_instance(cdef)
+        @test !Containers.check_field_instance(cdef)
     end
 
     @testset "@container 'Name' begin 'f' → T()  ... end" begin
@@ -55,11 +55,11 @@
                 "b" → B(1,2,3)
             end
         )
-        cdef = parse_container(expr.args[3:end])
+        cdef = Containers.parse_container(expr.args[3:end])
         @test cdef.fnum[] == 2
         @test cdef.fnames == ["a", "b"]
         @test cdef.ftypes == [:A, :B]
-        @test check_field_instance(cdef)
+        @test Containers.check_field_instance(cdef)
     end
 
     @testset "Recursive call (without instances)"  begin
@@ -75,17 +75,17 @@
                 "c" → C
             end
         )
-        cdef = parse_container(expr.args[3:end])
+        cdef = Containers.parse_container(expr.args[3:end])
         @test cdef.fnames == ["a", "b", "c"]
         @test cdef.ischild == [false, true, false]
         @test cdef.ftypes == [:A, :SubName, :C]
-        @test !check_field_instance(cdef)
+        @test !Containers.check_field_instance(cdef)
 
         @test length(cdef.childrens) == sum(cdef.ischild)
         @test cdef.childrens[1].name == :SubName
         @test cdef.childrens[1].fnames == ["as", "bs"]
         @test cdef.childrens[1].ftypes == [:A, :SubSubName]
-        @test haschildrens(cdef.childrens[1])
+        @test Containers.haschildrens(cdef.childrens[1])
     end
 
     @testset "Recursive call (with instances)"  begin
@@ -101,19 +101,19 @@
                 "c" → C(1,2,3)
             end
         )
-        cdef = parse_container(expr.args[3:end])
+        cdef = Containers.parse_container(expr.args[3:end])
         @test cdef.fnames == ["a", "b", "c"]
         @test cdef.ischild == [false, true, false]
         @test cdef.ftypes == [:A, :SubName, :C]
         @test cdef.finsta == [:(A(1)), :(SubName()), :(C(1,2,3))]
-        @test check_field_instance(cdef)
+        @test Containers.check_field_instance(cdef)
 
         @test length(cdef.childrens) == sum(cdef.ischild)
         @test cdef.childrens[1].name == :SubName
         @test cdef.childrens[1].fnames == ["as", "bs"]
         @test cdef.childrens[1].ftypes == [:A, :SubSubName]
-        @test haschildrens(cdef.childrens[1])
-        @test check_field_instance(cdef.childrens[1])
+        @show Containers.haschildrens(cdef.childrens[1])
+        @test Containers.check_field_instance(cdef.childrens[1])
     end
 
     @testset "Recursive call (errors)" begin
@@ -126,7 +126,7 @@
                 "c" → C()
             end
         )
-        @test_throws ArgumentError parse_container(expr.args[3:end])
+        @test_throws ArgumentError Containers.parse_container(expr.args[3:end])
     end
 
 end;
