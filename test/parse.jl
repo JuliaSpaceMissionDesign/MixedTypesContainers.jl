@@ -28,7 +28,17 @@ end
     push!(cdef.fnames, "f3")
     @test !check_field_instance(cdef)
     @test check_field_instance(cdef) == hasinstances(cdef)
-end 
+end
+
+@testset "check_recursion/getrecursive" begin
+
+    @test_throws ArgumentError check_recursion(:(@dummy_macro ""))
+    isrec, recexpr, name = getrecursive(:(@container "Name"))
+    @test isrec
+    @test isnothing(name)
+    @test recexpr == :("Name")
+
+end
 
 @testset "parse_field!" begin
 
