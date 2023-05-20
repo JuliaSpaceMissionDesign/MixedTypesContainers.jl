@@ -44,12 +44,18 @@ struct ContainerDef{T<:AbstractContainerParameters}
     ftypes::Vector{Symbol}
     finsta::Vector{Expr}
     fnum::Array{Int,0}
+end
 
-    function ContainerDef{T}(name::String) where {T<:AbstractContainerParameters}
-        num = Array{Int,0}(undef)
-        num[] = 0
-        return new(Symbol(name), T(), [], [], [], num)
-    end
+function ContainerDef{T}(name::String) where {T<:AbstractContainerParameters}
+    num = Array{Int,0}(undef)
+    num[] = 0
+    return ContainerDef{T}(Symbol(name), T(), [], [], [], num)
+end
+
+function ContainerDef(name::String, cpar::T) where {T<:AbstractContainerParameters}
+    num = Array{Int,0}(undef)
+    num[] = 0
+    return ContainerDef{T}(Symbol(name), cpar, [], [], [], num)
 end
 
 """
