@@ -1,40 +1,12 @@
-export AbstractContainer
-
 abstract type AbstractContainer{N} end
 
 abstract type AbstractContainerParameters end
 
-"""
-    DefaultContainerParameters <: AbstractContainerParameters
-
-A collection of Containers allowed parameters with their default values.
-
-### Fields
-- `init::Bool` -- Initialize the container. Default to `false`.
-- `parenttype::DataType` -- Type of the container parent. Default to `AbstractContainer`.
-"""
 @with_kw mutable struct DefaultContainerParameters <: AbstractContainerParameters
     init::Bool = false
     parenttype::Symbol = Symbol("AbstractContainer{N}")
 end
 
-"""
-    ContainerDef
-
-A type to handle the required parameters to create a new container.
-
-### Fields
-- `name::Symbol` -- Name of the container
-- `par::AbstractContainerParameters` -- Containter options
-
-- `fnames::Vector{String}` -- Name of the container fields
-- `ftypes::Vector{Symbol}` -- Types of the container fields
-- `finsta::Vector{Expr}` -- Instances of the container fields, if required
-- `fnum::Array{Int, 0}` -- Number of items in the container
-
-### Constructor
-- `ContainerDef(name::String)` -- default constructor by name
-"""
 struct ContainerDef{T<:AbstractContainerParameters}
     name::Symbol
     par::T
@@ -44,54 +16,44 @@ struct ContainerDef{T<:AbstractContainerParameters}
     ftypes::Vector{Symbol}
     finsta::Vector{Expr}
     fnum::Array{Int,0}
+
+    # subcotainers
+    childrens::Vector{ContainerDef{T}}
+    ischild::Vector{Bool}
 end
 
-function ContainerDef{T}(name::String) where {T<:AbstractContainerParameters}
+function ContainerDef{T}(name) where {T<:AbstractContainerParameters}
     num = Array{Int,0}(undef)
     num[] = 0
-    return ContainerDef{T}(Symbol(name), T(), [], [], [], num)
+    return ContainerDef{T}(Symbol(name), T(), String[], Symbol[], Expr[], num, [], Bool[]) 
 end
 
-function ContainerDef(name::String, cpar::T) where {T<:AbstractContainerParameters}
+function ContainerDef(name, cpar::T) where {T<:AbstractContainerParameters}
     num = Array{Int,0}(undef)
     num[] = 0
-    return ContainerDef{T}(Symbol(name), cpar, [], [], [], num)
+    return ContainerDef{T}(Symbol(name), cpar, String[], Symbol[], Expr[], num, [], Bool[])
 end
 
-"""
-    getfields(cdef::ContainerDef)
+@inline haschildrens(cdef::ContainerDef) = length(cdef.childrens) > 0
 
-Get container fields names.
-"""
-function getfields(cdef::ContainerDef)
-    return ntuple(i -> Symbol(cdef.fnames[i]), cdef.fnum[])
+@inline function getchildcontainer(cdef::ContainerDef, i::Int) 
+    if haschildrens(cdef) 
+        return cdef.childrens[i]
+    else 
+        throw(ErrorException("$(cdef.name) has no child containers"))
+    end
 end
 
-"""
-    gettypes(cdef::ContainerDef)
-
-Get container fields types.
-"""
-function gettypes(cdef::ContainerDef)
-    return ntuple(i -> cdef.ftypes[i], cdef.fnum[])
+@inline function getchildcontainer(cdef::ContainerDef, name::Symbol)
+    if haschildrens(cdef)
+        for ci in cdef.childrens
+            if ci.name == name 
+                return ci 
+            end
+        end
+        throw(KeyError("$(cdef.name) does not have any child container called $name"))
+    else
+        throw(ErrorException("$(cdef.name) has no child containers"))
+    end
 end
 
-"""
-    getinstances(cdef::ContainerDef)
-
-Get container fields instance definitions.
-"""
-function getinstances(cdef::ContainerDef)
-    return ntuple(i -> cdef.finsta[i], cdef.fnum[])
-end
-
-function Base.show(io::IO, cdef::ContainerDef{T}) where {T<:AbstractContainerParameters}
-    println(io, "ContainerDef{$T}(")
-    println(io, " name = $(cdef.name)")
-    println(io, " par = $(cdef.par)")
-    println(io, " fnum = $(cdef.fnum[])")
-    println(io, " fnames = $(cdef.fnames)")
-    println(io, " ftypes = $(cdef.ftypes)")
-    println(io, ")")
-    return nothing
-end

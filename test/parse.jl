@@ -1,119 +1,134 @@
-
-# ---
-# Fields
-
-@testset "_parse_field!" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-
-    Containers._parse_field!(cdef, Expr(:call, :A, 1))
-    @test :A in cdef.ftypes
-
-    fname = Containers._parse_field!(cdef, Expr(:call, :(→), "testb", :B))
-
-    @test !("testb" in cdef.fnames)
-    push!(cdef.fnames, fname)
-
-    @test isempty(cdef.finsta)
-    @test :B in cdef.ftypes
-    @test "testb" in cdef.fnames
-
-    fname = Containers._parse_field!(cdef, Expr(:call, :(→), "testc", :(C(1))))
-    @test !("testc" in cdef.fnames)
-    push!(cdef.fnames, fname)
-
-    @test "testc" in cdef.fnames
-    @test :C in cdef.ftypes
-    @test isempty(cdef.finsta)
-
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-    cdef.par.init = true
-    @test_throws Exception Containers._parse_field!(cdef, Expr(:call, :(→), "name", :A))
+@testset "check_field_name" begin
+    cdef = ContainerDef("Name", DefaultContainerParameters())
+    @test check_field_name(cdef, nothing) == "$(CONTAINER_DEFAULT_FNAME)1"
+    @test check_field_name(cdef, "name") == "name"
+    push!(cdef.fnames, "name")
+    @test_throws KeyError check_field_name(cdef, "name")
 end
 
-@testset "parse_container_fields__macrocall" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-    Containers.parse_container_fields!(cdef, nothing, Val(:macrocall))
+@testset "check_field_instance" begin
+    cdef = ContainerDef("Name", DefaultContainerParameters())
+    @test !check_field_instance(cdef)
+    
+    push!(cdef.fnames, "name")
+    @test !check_field_instance(cdef)
 
-    @test isempty(cdef.fnames)
-    @test isempty(cdef.ftypes)
-    @test isempty(cdef.finsta)
+    push!(cdef.finsta, :(A(1)))
+    @test check_field_instance(cdef)
+
+    push!(cdef.fnames, "name2")
+    @test_throws ArgumentError check_field_instance(cdef)
+
+    push!(cdef.finsta, :(A(1)))
+    @test check_field_instance(cdef)
+
+    cdef = ContainerDef("Name", DefaultContainerParameters())
+    push!(cdef.fnames, "f1")
+    push!(cdef.fnames, "f2")
+    push!(cdef.fnames, "f3")
+    @test !check_field_instance(cdef)
+    @test check_field_instance(cdef) == hasinstances(cdef)
+end 
+
+@testset "parse_field!" begin
+
+    field = :(A(1))
+    cdef = ContainerDef("Test", DefaultContainerParameters())
+    parse_field!(cdef, field)
+    @test cdef.fnames[1] == "$(CONTAINER_DEFAULT_FNAME)1"
+    @test cdef.finsta[1] == field
+    @test cdef.ftypes[1] == :A 
+    @test cdef.fnum[] == 1
+    @test_throws ArgumentError parse_field!(cdef, :B)
+
+    field = :(A(1, 2, 3, 4))
+    cdef = ContainerDef("Test", DefaultContainerParameters())
+    parse_field!(cdef, field)
+    @test cdef.fnames[1] == "$(CONTAINER_DEFAULT_FNAME)1"
+    @test cdef.finsta[1] == field
+    @test cdef.ftypes[1] == :A 
+    @test cdef.fnum[] == 1
+    @test_throws ArgumentError parse_field!(cdef, :B)
+
+    field = :B 
+    cdef = ContainerDef("Test", DefaultContainerParameters())
+    parse_field!(cdef, field)
+    @test cdef.fnames[1] == "$(CONTAINER_DEFAULT_FNAME)1"
+    @test length(cdef.finsta) == 0 
+    @test cdef.ftypes[1] == :B
+    @test cdef.fnum[] == 1
+    @test_throws ArgumentError parse_field!(cdef, :(A(1)))
+
+    field = :("name" → A)
+    cdef = ContainerDef("Test", DefaultContainerParameters())
+    parse_field!(cdef, field)
+    @test cdef.fnames[1] == "name"
+    @test length(cdef.finsta) == 0 
+    @test cdef.ftypes[1] == :A 
+    @test cdef.fnum[] == 1
+    @test_throws KeyError parse_field!(cdef, :("name" → B))
+
+    field = :("name" → A(1))
+    cdef = ContainerDef("Test", DefaultContainerParameters())
+    parse_field!(cdef, field)
+    @test cdef.fnames[1] == "name"
+    @test cdef.finsta[1] == :(A(1))
+    @test cdef.ftypes[1] == :A 
+    @test cdef.fnum[] == 1
+    @test_throws ArgumentError parse_field!(cdef, :("error" → 1.0))
+    @test_throws ArgumentError parse_field!(cdef, :("error" : B(1)))
+
 end
 
-@testset "parse_container_fields__call" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
+@testset "parse_args!" verbose=true begin
 
-    Containers.parse_container_fields!(cdef, [:A], Val(:call))
-    @test :A in cdef.ftypes
-    @test "$(Containers.CONTAINER_DEFAULT_FNAME)1" in cdef.fnames
+    @testset "Val{:tuple}, Val{:vect}" begin 
+        cdef = ContainerDef("Test", DefaultContainerParameters())
+        parse_args!(cdef, [:A, :B], Val(:tuple))
+        parse_args!(cdef, [:C, :D], Val(:vect))
+        for (i, t) in enumerate([:A, :B, :C, :D])
+            @test cdef.fnames[i] == "$(CONTAINER_DEFAULT_FNAME)$i"
+            @test cdef.ftypes[i] == t
+        end
+        @test length(cdef.finsta) == 0
+        @test cdef.fnum[] == 4
+        
+        cdef = ContainerDef("Test", DefaultContainerParameters())
+        @test_throws ArgumentError parse_args!(cdef, [1.0, 2.0], Val(:tuple))
+    end
 
-    Containers.parse_container_fields!(cdef, [:A, 1], Val(:call))
-    @test "$(Containers.CONTAINER_DEFAULT_FNAME)2" in cdef.fnames
+    @testset "Val{:block}" begin
+        expr = :(
+            @container "Name" begin
+                A 
+                B 
+                C
+            end
+        )
+        cdef = ContainerDef("Test", DefaultContainerParameters())
+        parse_args!(cdef, expr.args[end].args, Val(:block))
+        @test length(cdef.finsta) == 0
+        num = cdef.fnum[]
+        @test num == 3
+        @test cdef.fnames == ["$(CONTAINER_DEFAULT_FNAME)$(i)" for i in 1:num]
+    end
 
-    Containers.parse_container_fields!(cdef, [:B, 1, 2, 3], Val(:call))
-    @test :B in cdef.ftypes
-    @test "$(Containers.CONTAINER_DEFAULT_FNAME)3" in cdef.fnames
+    @testset "Method errors/unhandled cases" begin 
+        cdef = ContainerDef("Test", DefaultContainerParameters())
+        @test_throws ArgumentError parse_args!(cdef, 1.0, Val{:tuple}())
+        @test_throws MethodError parse_args!(cdef, missing, Val{:vect}())
+        @test_throws MethodError parse_args!(cdef, missing, Val{:call}())
+        @test_throws MethodError parse_args!(cdef, missing, Val{:macrocall}())
+    end
+
 end
 
-@testset "parse_container_fields__tuple" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-
-    Containers.parse_container_fields!(
-        cdef, (:A, :(B(1)), :("testa" → A), :("testb" → B(2))), Val(:tuple)
-    )
-    @test :A in cdef.ftypes
-    @test "$(Containers.CONTAINER_DEFAULT_FNAME)1" in cdef.fnames
-    @test :B in cdef.ftypes
-    @test "$(Containers.CONTAINER_DEFAULT_FNAME)2" in cdef.fnames
-    @test "testa" in cdef.fnames
-    @test "testb" in cdef.fnames
-    @test cdef.fnum[] == 4
-end
-
-# ---
-# Args
-
-@testset "parse_container_args!__basecase" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-    Containers.parse_container_args!(cdef, missing, missing)
-
-    @test isempty(cdef.fnames)
-    @test isempty(cdef.ftypes)
-    @test isempty(cdef.finsta)
-end
-
-@testset "parse_container_args!__block" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-    cdef.par.init = true
-    toparse = Base.remove_linenums!(
-        quote
-            "testa" → A(2)
-            B(3)
-        end,
-    )
-    Containers.parse_container_args!(cdef, toparse.args, Val(:block))
-    @test :A in cdef.ftypes
-    @test "testa" in cdef.fnames
-    @test :(A(2)) in cdef.finsta
-    @test :B in cdef.ftypes
-    @test "$(Containers.CONTAINER_DEFAULT_FNAME)2" in cdef.fnames
-end
-
-# ---
-# Parameters
-
-@testset "parse_container_parameters!" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-
-    # basecase
-    Containers.parse_container_parameters!(cdef, missing, missing)
-
-    @test isempty(cdef.fnames)
-    @test isempty(cdef.ftypes)
-    @test isempty(cdef.finsta)
-    @test cdef.par.init == false
-    @test cdef.par.parenttype == Symbol("AbstractContainer{N}")
-
-    # set parameter
-    Containers.parse_container_parameters!(cdef, Expr(:(=), :init, true))
-    @test cdef.par.init
-end
+expr = :(
+    @container "Name" begin
+        A 
+        B 
+        C
+    end
+)
+cdef = ContainerDef("Test", DefaultContainerParameters())
+parse_args!(cdef, expr.args[end].args, Val(:block))

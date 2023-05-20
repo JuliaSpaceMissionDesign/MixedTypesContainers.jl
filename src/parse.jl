@@ -1,125 +1,234 @@
+const CONTAINER_DEFAULT_FNAME = "FIELD"
+const CONTAINER_TOKEN = :(→)
 
-# ----
-# Parameters
+"""
+    check_field_name(cdef, argname)
 
-function parse_container_parameters!(cdef::ContainerDef, expr::Expr)
-    return parse_container_parameters!(cdef, expr.args, Val(expr.head))
-end
-
-function parse_container_parameters!(cdef, args, head)
-    return nothing
-end
-function parse_container_parameters!(cdef::ContainerDef, args, ::Val{:(=)})
-    setfield!(cdef.par, args[1], args[2])
-    return nothing
-end
-
-# ----
-# Args
-
-function parse_container_args!(cdef, args, head)
-    return nothing
-end
-
-function parse_container_args!(cdef, args, ::Val{:block})
-    for arg in args
-        parse_container_fields!(cdef, arg.args, Val(arg.head))
-    end
-    return nothing
-end
-
-# ----
-# Fields
-
-function _parse_field!(cdef, f)
-    fname = nothing
-
-    arg = f.args
-    if arg[1] == :(→)
-        # name of the field assigned by the user
-        if arg[3] isa Symbol
-            # "name" → T
-            cdef.par.init &&
-                throw(error("Cannot initialize container defined on types only!"))
-            push!(cdef.ftypes, arg[3])
-
-        elseif arg[3] == :macrocall
-            # TODO: implement recursive call
-            argsexp = macroexpand(@__MODULE__, args[3])
-
-        else
-            # "name" → T(args..)
-            push!(cdef.ftypes, arg[3].args[1])
-            cdef.par.init && push!(cdef.finsta, arg[3])
-        end
-        # user defined name
-        fname = arg[2]
-
-    else
-        # name of the field assigned by default
-        push!(cdef.ftypes, arg[1])
-        cdef.par.init && push!(cdef.finsta, f)
-    end
-
-    return fname
-end
-
-function parse_container_fields!(cdef, fargs, ::Val{:macrocall})
-    # TODO: implement macro call within the container def
-    return nothing
-end
-
-function parse_container_fields!(cdef, f, ::Val{:call})
-    # Single element in the container
-
-    fname_ = _parse_field!(cdef, Expr(:call, f...))
-
-    fname = if !isnothing(fname_)
-        fname_
-    else
-        "$(CONTAINER_DEFAULT_FNAME)$(cdef.fnum[]+1)"
-    end
-
-    cdef.fnum[] += 1
-    fname in cdef.fnames && throw(
-        error(
-            "A field called '$fname' is already " *
-            " present in the container! Fields must be unique.",
+Check if `argname` is a feasable field name for `cdef` or construct a proper name in case 
+`argname` is `nothing`.
+"""
+function check_field_name(cdef::ContainerDef, argname)
+    argname = isnothing(argname) ? "$(CONTAINER_DEFAULT_FNAME)$(cdef.fnum[]+1)" : argname
+    argname in cdef.fnames && throw(
+        KeyError(
+            "A field called '$argname' is already " *
+            "present in the container! Fields must be unique.",
         ),
     )
-    push!(cdef.fnames, fname)
-
-    return nothing
+    return argname 
 end
 
-function parse_container_fields!(cdef, fargs, ::Val{:tuple})
-    for f in fargs
-        fname = "$(CONTAINER_DEFAULT_FNAME)$(cdef.fnum[]+1)"
+"""
+    check_field_instance(cdef)
 
-        if f isa Symbol
-            # In this case within the container definition there are only types
-            cdef.par.init &&
-                throw(error("Cannot initialize container defined on types only!"))
-            push!(cdef.ftypes, f)
+Check if `cdef` fields can be properly instanciated.
+"""
+function check_field_instance(cdef::ContainerDef)
+    ninsta = length(cdef.finsta)
+    if ninsta != length(cdef.fnames) && ninsta > 0 
+        throw(
+            ArgumentError("all or none of the $(cdef.name) container fields shall be initialized")
+        )
+    elseif ninsta == 0
+        return false 
+    else
+        return true 
+    end
+end
 
-        elseif f.head == :call
-            fname_ = _parse_field!(cdef, f)
-            if !isnothing(fname_)
-                fname = fname_
+function hasinstances(cdef::ContainerDef)
+    return check_field_instance(cdef)
+end
+
+
+# check if there are subcontainers
+function check_recursion(expr)
+
+    if expr isa Expr
+        isamacro = expr.head == :macrocall 
+
+        if isamacro
+            macroname = expr.args[1]
+            isacontainer = macroname == Symbol("@container")
+            if isacontainer 
+                return true, expr.args[3:end]
+            else 
+                throw(ArgumentError("$macroname macro not currenty handled"))
+            end
+        end
+    end
+
+    return false, Any[]
+
+end
+
+function getrecursive(expr)
+
+    # "name" → @container 
+    if expr.args[1] == CONTAINER_TOKEN
+        isrecurrent, subexpr = check_recursion(expr.args[end])
+        if isrecurrent
+            return true, subexpr, expr.args[2]
+        end
+    end
+
+    # @container ... 
+    isrecurrent, subexpr = check_recursion(expr)
+    if isrecurrent
+        return true, subexpr, nothing
+    end
+    return false, Any[], nothing
+   
+end
+
+# ---------------------------
+# FIELDS
+# ---------------------------
+
+"""
+    parse_field!(cdef::ContainerDef, arg)
+
+Parse a new container field from `Expr` or `Symbol` argument `arg`.
+"""
+function parse_field!(cdef::ContainerDef, arg)
+
+    arginst = nothing
+    argname = nothing
+
+    if arg isa Symbol
+        # T
+        T = arg
+
+    else
+        argargs = arg.args
+        if argargs[1] == CONTAINER_TOKEN
+            # "argname" → T(arginit...) or "argname" → T
+
+            if argargs[3] isa Expr && argargs[3].head == :call
+                # "argname" → T(arginit...)
+                T = argargs[3].args[1]
+                arginst = argargs[3] 
+
+            elseif argargs[3] isa Symbol
+                # "argname" → T
+                if length(cdef.finsta) > 0
+                    throw(ArgumentError("all or none of the container fields shall be initialized"))
+                end
+                T = argargs[3]
+
+            else 
+                throw(ArgumentError("$arg container field cannot be processed"))
+
+            end
+            argname = argargs[2]
+
+        elseif argargs[1] isa Symbol && !(argargs[1] in (:(:), :(=), :(=>), :(>), :(<), :(~)))
+            # T(arginit...)
+            T = argargs[1]
+            arginst = arg
+            
+        else
+            throw(ArgumentError("$arg container field cannot be processed"))
+
+        end
+    end
+    
+    # name
+    argname = check_field_name(cdef, argname)
+    push!(cdef.fnames, argname)
+
+    # type
+    push!(cdef.ftypes, T)
+
+    # instance
+    !isnothing(arginst) && push!(cdef.finsta, arginst)
+    check_field_instance(cdef)
+
+    # item number
+    cdef.fnum[] += 1
+    push!(cdef.ischild, false)
+    nothing
+
+end
+
+function parse_recursive_field!(cdef::ContainerDef{T}, recargs, recname) where {T}
+    scdef = parse_container(recargs, T())
+
+    # name
+    argname = check_field_name(cdef, recname)
+    push!(cdef.fnames, argname)
+
+    # type
+    push!(cdef.ftypes, scdef.name)
+
+    # instance 
+    if hasinstances(scdef)
+        push!(cdef.finsta, :($(scdef.name)()))
+    end
+    check_field_instance(cdef)
+
+    # childrens
+    push!(cdef.childrens, scdef)
+
+    # item 
+    cdef.fnum[] += 1
+    push!(cdef.ischild, true)
+
+    nothing
+end
+
+# ---------------------------
+# ARGS
+# ---------------------------
+
+function parse_args!(cdef::ContainerDef, exprargs, ::Val{:tuple})
+    for argi in exprargs
+        if argi isa Expr || argi isa Symbol
+            parse_field!(cdef, argi)
+        else
+            throw(ArgumentError("argument with type $(typeof(argi)) not allowed"))
+        end
+    end
+    nothing
+end
+
+function parse_args!(cdef::ContainerDef, exprargs, ::Val{:vect})
+    return parse_args!(cdef, exprargs, Val(:tuple))
+end
+
+function parse_args!(cdef::ContainerDef, exprargs, ::Val{:block})
+    for argi in exprargs
+        if argi isa Expr && !(argi isa LineNumberNode)
+            isrec, recargs, recname = getrecursive(argi)
+            if isrec 
+                parse_recursive_field!(cdef, recargs, recname)
+            else
+                parse_field!(cdef, argi)
             end
 
-        else
-            throw(error("Error in parsing container fields!"))
-        end
-        cdef.fnum[] += 1
+        elseif argi isa Symbol
+            parse_field!(cdef, argi)
 
-        fname in cdef.fnames && throw(
-            error(
-                "A field called '$fname' is already " *
-                " present in the container! Fields must be unique.",
-            ),
-        )
-        push!(cdef.fnames, fname)
+        elseif argi isa LineNumberNode
+            # pass - LineNumberNode case
+
+        else
+            throw(ErrorException("you shouldn't arrive here")) 
+
+        end
     end
-    return nothing
+    nothing
 end
+
+# macro container(expr...)
+
+#     # TODO: non DefaultContainerParameters case 
+    
+#     # DefaultContainerParameters
+#     cpar = DefaultContainerParameters()
+
+#     cdef = parse_container(expr, cpar)
+#     print(cdef) 
+
+#     return nothing
+# end

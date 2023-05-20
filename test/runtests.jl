@@ -1,7 +1,8 @@
-using Containers
 using Test
+using Containers
 
 @testset "Containers.jl" verbose = true begin
-    include("parse.jl")
-    include("types.jl")
-end
+    for file in ["types.jl", "parse.jl", "container.jl"]
+        include(file)
+    end
+end;

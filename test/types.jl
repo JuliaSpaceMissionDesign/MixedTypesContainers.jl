@@ -1,10 +1,23 @@
-@testset "getfields" begin
-    cdef = Containers.ContainerDef{Containers.DefaultContainerParameters}("Test")
-    @test isempty(Containers.getfields(cdef))
-    @test isempty(Containers.gettypes(cdef))
-    @test isempty(Containers.getinstances(cdef))
+@testset "Types" verbose=true begin
 
-    Containers.parse_container_fields!(cdef, [:A], Val(:call))
-    @test :A in Containers.gettypes(cdef)
-    @test Symbol("$(Containers.CONTAINER_DEFAULT_FNAME)1") in Containers.getfields(cdef)
+    @testset "ContainerDef construction" begin
+        num = Array{Int, 0}(undef)
+        num[] = 0
+
+        cdef = ContainerDef("Name", DefaultContainerParameters())
+        cdef2 = ContainerDef{DefaultContainerParameters}("Name")
+        @test typeof(cdef) == typeof(cdef2)
+        @test cdef.name == cdef2.name 
+    end
+
+    @testset "haschildcontainer" begin
+        cdef = ContainerDef("Name", DefaultContainerParameters())
+        cdef2 = ContainerDef("Name2", DefaultContainerParameters())
+        @test !haschildrens(cdef)
+
+        push!(cdef.childrens, cdef2)
+        @test getchildcontainer(cdef, 1) == cdef2
+        @test getchildcontainer(cdef, :Name2) == cdef2
+    end
+
 end
