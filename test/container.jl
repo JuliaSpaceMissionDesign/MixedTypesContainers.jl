@@ -129,4 +129,15 @@
         @test_throws ArgumentError Containers.parse_container(expr.args[3:end])
     end
 
+    @testset "Container parameters" begin
+        expr = :(
+            @container "Name" parenttype=TestSymbol init=true begin
+                A(1)
+            end
+        )
+        cdef = Containers.parse_container(expr.args[3:end])
+        @test cdef.par.parenttype == :TestSymbol
+        @test cdef.par.init 
+    end
+
 end;
