@@ -4,7 +4,7 @@ abstract type AbstractContainerParameters end
 
 @with_kw mutable struct DefaultContainerParameters <: AbstractContainerParameters
     init::Bool = false
-    parenttype::Symbol = Symbol("AbstractContainer{N}")
+    parenttype::Symbol = Symbol("AbstractContainer")
 end
 
 struct ContainerDef{T<:AbstractContainerParameters}

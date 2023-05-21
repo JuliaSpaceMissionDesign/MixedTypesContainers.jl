@@ -15,18 +15,6 @@ function parse_container(exprargs, ::T=DefaultContainerParameters()) where T
     return cdef
 end
 
-function create_empty_constructor(cdef::ContainerDef)
-    instances = getinstances(cdef)
-    instance = :(tuple($(instances...)))
-    name = cdef.name
-
-    return quote
-        function $(name)()
-            return $name($instance)
-        end
-    end
-end
-
 function create_container(cdef::ContainerDef)
     name = cdef.name
     fields = getfields(cdef)
@@ -34,7 +22,9 @@ function create_container(cdef::ContainerDef)
     utypes = unique(types)
     ntypes = length(utypes)
     nfields = cdef.fnum[]
+    parent = cdef.par.parenttype
 
+    # NTuple arguments and signature
     if ntypes == 1 
         ntarg = :(NTuple{$nfields, $(types[1])})
     else
@@ -42,6 +32,7 @@ function create_container(cdef::ContainerDef)
     end
     nttype = :(NamedTuple{$fields, $ntarg})
 
+    # Child containers
     subcont = []
     if haschildrens(cdef)
         for scdef in cdef.childrens
@@ -49,17 +40,44 @@ function create_container(cdef::ContainerDef)
         end
     end
 
-    # construct type map
+    # Type map
     tmap = Dict{Symbol, Vector{Int}}()
     for ut in utypes 
         push!(tmap, ut => findall(x -> x == ut, types))
     end
 
-    # empty constructor 
-    econstr = if hasinstances(cdef)
-        create_empty_constructor(cdef)
+    # args constructors 
+    argconstr_args = Expr[]
+    for (f, t) in zip(fields, types)
+        push!(argconstr_args, :($f::$t))
+    end
+    argconstr = quote
+        $(name)($(argconstr_args...)) = $name(tuple($(fields...)))
+    end
+
+    # Empty/kwargs constructors
+    if hasinstances(cdef)
+        instances = getinstances(cdef)
+        instance = :(tuple($(instances...)))
+        econstr = quote
+            function $(name)()
+                return $name($instance)
+            end
+        end
+
+        # # kwconstr
+        # kargconstr_args = []
+        # for (f, t, i) in zip(fields, types, instances)
+        #     push!(kargconstr_args, :($f::$t = $i))
+        # end
+        # kwconstr = quote
+        #     $(name)(;$(kargconstr_args...)) = $name(tuple($(fields...)))
+        # end
+
     else 
-        :(nothing)
+        econstr = :(nothing)
+        kwconstr = :(nothing)
+
     end
 
     return quote
@@ -69,7 +87,7 @@ function create_container(cdef::ContainerDef)
         
         # ---
         # Type 
-        struct $name{N, M} <: $(cdef.par.parenttype)
+        struct $name{N, M} <: $(parent){N}
             data::$nttype
             typemap::Dict{Symbol, Vector{Int}}
             $(name)(data::$nttype) = new{$ntypes, $nfields}(data, $tmap)
@@ -79,6 +97,8 @@ function create_container(cdef::ContainerDef)
         # Constructors
         $(name)(data::$ntarg) = $name(NamedTuple{$fields}(data))
         $(name)(data::AbstractVector) = $name(tuple(data...))
+        $argconstr
+        # $kwconstr
 
         # --- 
         # Utils
@@ -86,11 +106,34 @@ function create_container(cdef::ContainerDef)
 
         # --- 
         # Julia API 
-        @inbounds function Base.getindex(c::$name, elements...) 
+        @inline function Base.getindex(c::$name, elements...) 
             return Base.getindex(c.data, elements...)
         end
 
         # Empty constructor (initialized container) 
         $econstr
     end
+end
+
+
+"""
+    @container
+
+Create a new container.
+"""
+macro container(expr...)
+
+    pdef = DefaultContainerParameters()
+
+    # define the container fields
+    cdef = parse_container(expr, pdef)
+
+    # create the container str and methods
+    cstr = create_container(cdef)
+
+    return esc(
+        quote
+            $cstr
+        end,
+    )
 end
