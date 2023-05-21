@@ -82,6 +82,22 @@ function getrecursive(expr)
 end
 
 # ---------------------------
+# PARAMETERS
+# ---------------------------
+
+function parse_kwargs!(cdef::ContainerDef, expr::Expr)
+    return parse_kwargs!(cdef, expr.args, Val(expr.head))
+end
+
+function parse_kwargs!(cdef, args, head)
+    return nothing
+end
+function parse_kwargs!(cdef::ContainerDef, args, ::Val{:(=)})
+    setfield!(cdef.par, args[1], args[2])
+    return nothing
+end
+
+# ---------------------------
 # FIELDS
 # ---------------------------
 
@@ -219,16 +235,3 @@ function parse_args!(cdef::ContainerDef, exprargs, ::Val{:block})
     end
     nothing
 end
-
-# macro container(expr...)
-
-#     # TODO: non DefaultContainerParameters case 
-    
-#     # DefaultContainerParameters
-#     cpar = DefaultContainerParameters()
-
-#     cdef = parse_container(expr, cpar)
-#     print(cdef) 
-
-#     return nothing
-# end

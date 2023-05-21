@@ -132,3 +132,13 @@ end
     end
 
 end
+
+@testset "parse_kwargs!" begin
+    @test isnothing(Containers.parse_kwargs!(missing, missing, missing))
+    cdef = Containers.ContainerDef("Test", Containers.DefaultContainerParameters())
+
+    Containers.parse_kwargs!(cdef, [:init, true], Val(:(=)))
+    @test cdef.par.init
+    Containers.parse_kwargs!(cdef, :(init=false))
+    @test !cdef.par.init
+end
