@@ -88,3 +88,7 @@ Get container fields instance definitions.
 @inline function getinstances(cdef::ContainerDef)
     return ntuple(i -> cdef.finsta[i], cdef.fnum[])
 end
+
+@inline function gettmap(c::C) where {C <: AbstractContainer}
+    return c.typemap
+end
