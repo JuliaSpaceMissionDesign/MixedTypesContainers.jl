@@ -63,6 +63,7 @@ function create_container(cdef::ContainerDef)
             function $(name)()
                 return $name($instance)
             end
+            $name()
         end
 
         # # kwconstr
