@@ -141,3 +141,27 @@
     end
 
 end;
+
+
+struct A 
+    x::Float64 
+end 
+struct B 
+    x::Float64
+end
+
+@container "TestContainer" begin
+    "a" → B(1.0)
+    "b" → A(1.0)
+    "c" → A(1.0)
+    "d" → A(1.0)
+    "e" → B(1.0)
+    "f" → B(1.0)
+end
+
+@testset "create_container" begin
+    c = TestContainer()
+    @test c.data == (a = B(1.0), b = A(1.0), c = A(1.0), d = A(1.0), e = B(1.0), f = B(1.0))
+    @test c.typemap[:A] == [2, 3, 4]
+    @test c.typemap[:B] == [1, 5, 6]
+end
