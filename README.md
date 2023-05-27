@@ -1,15 +1,15 @@
 # Containers.jl
 
-[![Dev Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliaspacemissiondesign.github.io/Containers.jl/dev/) 
-[![Build Status](https://github.com/JuliaSpaceMissionDesign/Containers.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/JuliaSpaceMissionDesign/Containers.jl/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/JuliaSpaceMissionDesign/Containers.jl/branch/master/graph/badge.svg?token=3SJCV229XX)](https://codecov.io/gh/JuliaSpaceMissionDesign/Containers.jl)
+[![Dev Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliaspacemissiondesign.github.io/MixedTypesContainers.jl/dev/) 
+[![Build Status](https://github.com/JuliaSpaceMissionDesign/MixedTypesContainers.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/JuliaSpaceMissionDesign/MixedTypesContainers.jl/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/JuliaSpaceMissionDesign/MixedTypesContainers.jl/branch/master/graph/badge.svg?token=3SJCV229XX)](https://codecov.io/gh/JuliaSpaceMissionDesign/MixedTypesContainers.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/invenia/BlueStyle)
 
 *An efficient library for mixed-types containers handling and iteration.*
 
 ## Quickstart
 
-All you need to know to create a new mixed-type container using `Containers.jl` is how to use
+All you need to know to create a new mixed-type container using `MixedTypesContainers.jl` is how to use
 the `@container` macro. The user have the possibility to create both **named** and **unnamed**
 fields within the user-defined container. In the latter case, a default name will be assigned
 during the container creation.
