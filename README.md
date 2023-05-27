@@ -1,4 +1,4 @@
-# Containers.jl
+# MixedTypesContainers.jl
 
 [![Dev Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliaspacemissiondesign.github.io/MixedTypesContainers.jl/dev/) 
 [![Build Status](https://github.com/JuliaSpaceMissionDesign/MixedTypesContainers.jl/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/JuliaSpaceMissionDesign/MixedTypesContainers.jl/actions/workflows/ci.yml)
