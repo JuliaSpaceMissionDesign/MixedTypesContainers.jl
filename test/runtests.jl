@@ -1,7 +1,7 @@
 using Test
-using Containers
+using MixedTypesContainers
 
-@testset "Containers.jl" verbose = true begin
+@testset "MixedTypesContainers.jl" verbose = true begin
     for file in ["types.jl", "parse.jl", "container.jl", "iteration.jl"]
         include(file)
     end

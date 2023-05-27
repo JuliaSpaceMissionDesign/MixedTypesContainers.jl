@@ -1,9 +1,9 @@
-module Containers
+module MixedTypesContainers
 
 using Parameters
 using MacroTools
 
-export AbstractContainer, AbstractContainerParameters, @container
+export AbstractMixedTypesContainer, AbstractContainerParameters, @container
 
 include("types.jl")
 include("parse.jl")

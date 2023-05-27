@@ -103,7 +103,7 @@ function create_container(cdef::ContainerDef)
 
         # --- 
         # Utils
-        @inline hasinstances(c::$name) = $(Containers.hasinstances(cdef))
+        @inline hasinstances(c::$name) = $(MixedTypesContainers.hasinstances(cdef))
 
         # --- 
         # Julia API 

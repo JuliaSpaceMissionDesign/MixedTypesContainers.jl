@@ -1,10 +1,10 @@
-abstract type AbstractContainer{N} end
+abstract type AbstractMixedTypesContainer{N} end
 
 abstract type AbstractContainerParameters end
 
 @with_kw mutable struct DefaultContainerParameters <: AbstractContainerParameters
     init::Bool = false
-    parenttype::Symbol = Symbol("AbstractContainer")
+    parenttype::Symbol = Symbol("AbstractMixedTypesContainer")
 end
 
 struct ContainerDef{T<:AbstractContainerParameters}
@@ -89,6 +89,6 @@ Get container fields instance definitions.
     return ntuple(i -> cdef.finsta[i], cdef.fnum[])
 end
 
-@inline function gettmap(c::C) where {C <: AbstractContainer}
+@inline function gettmap(c::C) where {C <: AbstractMixedTypesContainer}
     return c.typemap
 end

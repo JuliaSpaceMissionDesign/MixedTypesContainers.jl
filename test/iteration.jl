@@ -12,7 +12,7 @@ c = @container "MyTestContainer" begin
     "b" → MyB(2.0)
 end
 
-@iterated function f(c::AbstractContainer{N}) where N 
+@iterated function f(c::AbstractMixedTypesContainer{N}) where N 
     val = 0.0 
     @unwrap for i in 1:N 
         val += c[i].x
