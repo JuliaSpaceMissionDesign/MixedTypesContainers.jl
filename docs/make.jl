@@ -9,7 +9,8 @@ makedocs(;
     modules=[Containers],
     format=Documenter.HTML(; prettyurls=CI, highlights=["yaml"], ansicolor=true),
     pages=[
-        "Home" => "index.md"
+        "Home" => "index.md",
+        "Design" => "design.md"
     ],
     clean=true,
 )
