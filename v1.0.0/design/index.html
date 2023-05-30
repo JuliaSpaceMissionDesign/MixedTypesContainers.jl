@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Design · MixedTypesContainers.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../"><img src="../assets/logo.png" alt="MixedTypesContainers.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../">MixedTypesContainers.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Home</a></li><li class="is-active"><a class="tocitem" href>Design</a><ul class="internal"><li><a class="tocitem" href="#A-Performance-Issue"><span>A Performance Issue</span></a></li><li><a class="tocitem" href="#Goal"><span>Goal</span></a></li><li><a class="tocitem" href="#Design-Philosophy"><span>Design Philosophy</span></a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Design</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Design</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaSpaceMissionDesign/MixedTypesContainers.jl/blob/master/docs/src/design.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Design-Motivations-and-Philosophy"><a class="docs-heading-anchor" href="#Design-Motivations-and-Philosophy">Design Motivations &amp; Philosophy</a><a id="Design-Motivations-and-Philosophy-1"></a><a class="docs-heading-anchor-permalink" href="#Design-Motivations-and-Philosophy" title="Permalink"></a></h1><h2 id="A-Performance-Issue"><a class="docs-heading-anchor" href="#A-Performance-Issue">A Performance Issue</a><a id="A-Performance-Issue-1"></a><a class="docs-heading-anchor-permalink" href="#A-Performance-Issue" title="Permalink"></a></h2><p>When dealing with multiple data types, often comes the problem to organise them into some kind of container. Think about the case in which we have an abstract type and its concrete subtypes:</p><pre><code class="language-julia hljs">abstract type AbstractParent end
+
+struct A &lt;: AbstractParent
+    v::Vector
+end
+
+struct B &lt;: AbstractParent
+    v::Vector
+end
+
+struct C
+    x::Number
+end</code></pre><p>and we want to organize the instances within an vector-like structure. The direct use of a <code>Vector</code> type would be inefficient in this case since its instace would result in a abstract vector type:</p><pre><code class="language-julia hljs">v = [A(zeros(3)), B(zeros(3))]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Main.AbstractParent}:
+ Main.A([0.0, 0.0, 0.0])
+ Main.B([0.0, 0.0, 0.0])</code></pre><p>or, in case the elements are not associated to the same parent to a vector of <code>Any</code>:</p><pre><code class="language-julia hljs">v2 = [A(zeros(3)), B(zeros(3)), C(1.0)]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Any}:
+ Main.A([0.0, 0.0, 0.0])
+ Main.B([0.0, 0.0, 0.0])
+ Main.C(1.0)</code></pre><p>Both cases are largely undesired from the performance point of view, because any operation would allocate something into memory. For example, in the first case, let&#39;s assume we want to write a function to get a value within the <code>v</code> vector contained in <code>A</code> or <code>B</code>:</p><pre><code class="language-julia hljs">@inbounds function getval(vi)
+    return vi[1].v[1]
+end</code></pre><p>Let&#39;s then benchmark this simple operation:</p><pre><code class="language-julia-repl hljs">julia&gt; @benchmark getval($v)
+BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
+ Range (min … max):  31.621 ns … 867.008 ns  ┊ GC (min … max): 0.00% … 96.08%
+ Time  (median):     33.290 ns               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   35.954 ns ±  15.665 ns  ┊ GC (mean ± σ):  0.68% ±  1.66%
+
+  ▂▅█▇▄▂    ▂▁▅▅▄▃▂▃▁▁                                         ▂
+  ████████▆█████████████▇▇▆▅▅▆▇▆▆▄▅▄▃▄▅▆▇▇▆▆▆▆▄▄▃▁▄▄▄▅▆▅▅▅▅▃▅▄ █
+  31.6 ns       Histogram: log(frequency) by time      64.2 ns &lt;
+
+ Memory estimate: 16 bytes, allocs estimate: 1.</code></pre><p>This is something <strong>very undesired</strong> since, at every call of <code>getval</code>, the vector <code>v</code> contained in either <code>A</code> or <code>B</code> is allocated before getting its first element. Indeed, constructing a concrete vector:</p><pre><code class="language-julia hljs">vA = [A(zeros(3)), A(zeros(3))]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{Main.A}:
+ Main.A([0.0, 0.0, 0.0])
+ Main.A([0.0, 0.0, 0.0])</code></pre><p>its performances results way better than the abstract one (approx 15 times faster for this simple example):</p><pre><code class="language-julia-repl hljs">julia&gt; @benchmark getval($vA)
+BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
+ Range (min … max):  2.396 ns … 56.949 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     2.409 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   2.554 ns ±  1.368 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+  █▄      ▆▄  ▂▁                                             ▁
+  ███▇▁▁▁▅██▇▇██▅▄▄▆▄▃▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▁▁▁▃▁▄ █
+  2.4 ns       Histogram: log(frequency) by time     3.39 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><h2 id="Goal"><a class="docs-heading-anchor" href="#Goal">Goal</a><a id="Goal-1"></a><a class="docs-heading-anchor-permalink" href="#Goal" title="Permalink"></a></h2><p>The goal of this package is then to create <strong>efficient containers for mixed-type data</strong>.</p><h2 id="Design-Philosophy"><a class="docs-heading-anchor" href="#Design-Philosophy">Design Philosophy</a><a id="Design-Philosophy-1"></a><a class="docs-heading-anchor-permalink" href="#Design-Philosophy" title="Permalink"></a></h2><h3 id="Efficiency"><a class="docs-heading-anchor" href="#Efficiency">Efficiency</a><a id="Efficiency-1"></a><a class="docs-heading-anchor-permalink" href="#Efficiency" title="Permalink"></a></h3><p>While the use of <code>Vector</code> types is not efficient <code>julia</code> already possess a data type capable to efficiently handle multiple types: the <a href="https://www.geeksforgeeks.org/tuples-in-julia/"><code>Tuple</code></a>. By exploiting a tuple, in fact, it is possible to have good performances while still keeping a certain degree of flexibility in terms of its arguments types.</p><p>Indeed, in our example, let&#39;s try to benchmark the <code>getval</code> function giving as input a tuple containing mixed-types:</p><pre><code class="language-julia hljs">t = (A(zeros(3)), B(zeros(3)))</code></pre><p>Therefore, benchmarking it we can notice that it is possible to achieve the same performances of a concrete vector despite the different types involved:</p><pre><code class="language-julia-repl hljs">julia&gt; @benchmark getval($t)
+BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
+ Range (min … max):  2.394 ns … 26.206 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     2.408 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   2.466 ns ±  0.917 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+   ▄███▆▂▃▂                              ▁▁                  ▂
+  █████████▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃████▅▄▁▁▁▁▁▁▃▁▁▁▁▁▃▅ █
+  2.39 ns      Histogram: log(frequency) by time     2.61 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>Therefore for mixed-type data storage it is evident that a <code>Tuple</code> would be the best type to use.</p><h3 id="Flexibility"><a class="docs-heading-anchor" href="#Flexibility">Flexibility</a><a id="Flexibility-1"></a><a class="docs-heading-anchor-permalink" href="#Flexibility" title="Permalink"></a></h3><p>In order to increase the flexibility of the <code>Tuple</code>, <a href="https://www.geeksforgeeks.org/namedtuple-in-julia/"><code>NamedTuple</code></a> are preferred, since can be indexed both via index (<code>Int</code>) and <em>name</em> (<code>Symbol</code>) with pratically equivalent performances w.r.t. the base <code>Tuple</code> type.</p><p>As an example:</p><pre><code class="language-julia hljs">function getval(vi, it)
+    return vi[it].v
+end
+
+v = [A(zeros(1)) for _ in 1:10000];
+t = (v..., B(zeros(3)));
+t2 = NamedTuple(
+    tuple([Symbol(&quot;v$i&quot;) =&gt; v[i] for i in eachindex(v)]...)
+);</code></pre><p>Then benchmarking the <code>Tuple</code> indexing:</p><pre><code class="language-julia-repl hljs">julia&gt; @benchmark getval($t, 801)
+BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
+ Range (min … max):  2.397 ns … 27.503 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     2.406 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   2.471 ns ±  0.940 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+  ▆██▇▃▂▁                              ▁▁▁                   ▂
+  ███████▅▃▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▃▁▁▇███▇▄▃▁▁▁▁▁▁▃▁▁▁▁▁▁▇▇ █
+  2.4 ns       Histogram: log(frequency) by time     2.61 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>Against the <code>NamedTuple</code> indexing:</p><pre><code class="language-julia-repl hljs">julia&gt; @benchmark getval($t2, 801)
+BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
+ Range (min … max):  2.396 ns … 30.852 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     2.404 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   2.487 ns ±  1.119 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+  ▆██▇▄▃▃                             ▂▂▃▂                   ▂
+  ███████▄▁▁▁▁▅▃▁▁▃▁▃▃▁▁▁▁▁▃▁▁▃▁▁▁▁▁▁▃████▅▆▆▁▁▁▁▃▄▅▄▄▄▁▁▄██ █
+  2.4 ns       Histogram: log(frequency) by time     2.61 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.
+
+julia&gt; @benchmark getval($t2, :v801)
+BenchmarkTools.Trial: 10000 samples with 1000 evaluations.
+ Range (min … max):  2.657 ns … 35.546 ns  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     2.671 ns              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   2.790 ns ±  1.266 ns  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+  █▅     ▄▂                                                  ▁
+  ██▁▁▁▁▁██▄▄▇▄▃▃▁▁▁▃▁▁▃▃▁▁▁▁▁▃▃▃▁▁▁▄▄▁▃▃▁▄▃▁▁▄▄▄▅▅▄▅▅▅▄▄▃▄▄ █
+  2.66 ns      Histogram: log(frequency) by time     3.86 ns &lt;
+
+ Memory estimate: 0 bytes, allocs estimate: 0.</code></pre><p>Show basically no difference for indexing via <code>Int</code> and a negligible difference when indexing by named fields (<code>Symbol</code>).</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Home</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Tuesday 30 May 2023 19:10">Tuesday 30 May 2023</span>. Using Julia version 1.9.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
